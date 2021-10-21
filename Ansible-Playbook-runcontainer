@@ -1,0 +1,13 @@
+---
+- hosts : localhost
+  tasks :
+    - name : start docker container
+      docker_container:
+        name : springboohelloworldjenkinsci
+        image: srinadhdocker/springboohelloworldjenkinsci:{{ dockertag  }}
+        state: started
+        restart: yes
+        ports:
+         - "8888:8080"
+
+ansible-playbook run-docker-container.yml --extra-vars '{"dockertag":"4"}'
