@@ -1,0 +1,38 @@
+https://rtfm.co.ua/en/aws-create-an-elastic-container-registry-and-jenkins-deploy-job/
+
+https://www.howtoforge.com/how-to-store-aws-user-access-key-and-secret-key-in-jenkins/
+
+pipeline{
+    agent any
+    tools { 
+        maven 'maven-3.8.3' 
+    }
+    stages{
+        stage('git checkout'){
+            steps{
+                git 'https://github.com/cloudtechmasters/springboohello-CICD.git'
+            }
+        }
+        stage('Build Maven'){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        
+        stage('build docker image from file'){
+            steps{
+                sh 'docker image build -t 421168438563.dkr.ecr.us-east-1.amazonaws.com/test:${BUILD_NUMBER} .'
+            }
+        }
+        
+        stage("Push the docker image to ecr registry"){
+            steps{
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-ecr-credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 421168438563.dkr.ecr.us-east-1.amazonaws.com'
+                    sh 'docker image push 421168438563.dkr.ecr.us-east-1.amazonaws.com/test:${BUILD_NUMBER}'
+                }
+            }
+        }
+        
+    }
+}
