@@ -1,0 +1,14 @@
+Pre--requisites 
+Ansible
+
+pipeline
+{
+    agent any
+    stages{
+        stage('run docker container'){
+            steps{
+                sh """ sudo ansible-playbook    /root/run-docker-container.yml --extra-vars '{"dockertag":"${params.dockertag}"}' """ 
+            }
+        }
+    }
+}
