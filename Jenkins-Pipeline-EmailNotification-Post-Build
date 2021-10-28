@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+	tools{ 
+        maven 'Maven-3.8.3'
+    }
+    stages {
+        stage('Git Checkout') {
+            steps {
+                git branch: 'master', url: 'https://github.com/cloudtechmasters/springboothello-CICD.git'
+            }
+        }
+        stage('Build Maven'){
+    		steps {
+        			sh 'mvn clean package'
+    		}
+        }
+    }
+    post {
+        success {
+            mail bcc: '', body: 'Maven artifact build successfully', cc: '', from: 'vasumundlamuri@gmail.com', replyTo: '', subject: 'The Pipeline success', to: 'vasumundlamuri@gmail.com'
+        }
+        failure {  
+            mail bcc: '', body: 'Maven artifact build failed', cc: '', from: 'vasumundlamuri@gmail.com', replyTo: '', subject: 'The Pipeline failed', to: 'vasumundlamuri@gmail.com'
+         } 
+    }
+}
