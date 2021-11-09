@@ -1,0 +1,82 @@
+Stages of jenkins pipeline to push the docker image to Public Registry DockerHub and run the container 
+
+1.Check the code ( git clone )
+2.Build the code using maven or gradle
+To Recognise maven and gradle location for the jenkins pipeline we need to add under Global Tool Configuration 
+/opt/apache-maven-3.8.3
+/opt/gradle-6.9
+and refer that under tools section in pipeline
+tools{
+        maven 'maven-3.8.3'
+        gradle 'gradle-6.9'
+    }
+3.Build the docker image
+docker image build -t srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER .
+see the list of docker build images 
+# docker images 
+REPOSITORY                                        TAG       IMAGE ID       CREATED             SIZE
+srinadhdocker/springboot-maven-course-micro-svc   7         bab1e1a53e8c   12 minutes ago      661MB
+srinadhdocker/springboot-maven-course-micro-svc   5         6226759786e0   50 minutes ago      661MB
+srinadhdocker/springboot-maven-course-micro-svc   4         3da8dc5e830e   About an hour ago   661MB
+java                                              8         d23bdf5b1b1b   4 years ago         643MB
+
+add user jenkins to group docker
+change the permissions
+chmod 777 /var/run/docker.sock
+4.Login to DockerHub and push the docker images
+To login to docker hub we need to save or store credentials under jenkins manage credentials
+Manage Jenkins ---> Manage Credentials ---> Stores scoped to Jenkins ---> Jenkins ---> System ---> Global credentials (unrestricted) ---> Add Credentials 
+Id : DockerHub_Credentials
+after saving credentials we need to use that in pipeline, connect to docker hub and push the image
+
+withCredentials([usernamePassword(credentialsId: 'DockerHub_Credentials', passwordVariable: 'password', usernameVariable: 'username')]) {
+           
+sh  'docker login -u ${username} -p ${password}'
+            
+sh 'docker image push srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER'
+
+to see the docker running or active containers 
+[root@ip-172-31-16-122 ~]# docker ps
+CONTAINER ID   IMAGE                                               COMMAND                CREATED          STATUS          PORTS                                       NAMES
+c4c6b1dc7771   srinadhdocker/springboot-maven-course-micro-svc:7   "java -jar /app.jar"   13 minutes ago   Up 13 minutes   0.0.0.0:8888->8080/tcp, :::8888->8080/tcp   myJavaContainerone
+
+or 
+docker container ls
+CONTAINER ID   IMAGE                                               COMMAND                CREATED          STATUS          PORTS                                       NAMES
+c4c6b1dc7771   srinadhdocker/springboot-maven-course-micro-svc:7   "java -jar /app.jar"   14 minutes ago   Up 14 minutes   0.0.0.0:8888->8080/tcp, :::8888->8080/tcp   myJavaContainerone
+
+
+to stop the docker container 
+[root@ip-172-31-16-122 ~]# docker stop c4c6b1dc7771 (docker start <container_id>)
+c4c6b1dc7771
+
+to see the stopped containers along with running 
+
+#docker ps -a or docker ps -all
+[root@ip-172-31-16-122 ~]# docker ps -all
+CONTAINER ID   IMAGE                                               COMMAND                CREATED          STATUS                        PORTS     NAMES
+c4c6b1dc7771   srinadhdocker/springboot-maven-course-micro-svc:7   "java -jar /app.jar"   15 minutes ago   Exited (143) 34 seconds ago             myJavaContainerone
+
+status exited means it is stopped 
+
+to start the docker container
+
+[root@ip-172-31-16-122 ~]# docker start c4c6b1dc7771 (docker start <container_id)
+c4c6b1dc7771
+[root@ip-172-31-16-122 ~]# docker ps -all
+CONTAINER ID   IMAGE                                               COMMAND                CREATED          STATUS         PORTS                                       NAMES
+c4c6b1dc7771   srinadhdocker/springboot-maven-course-micro-svc:7   "java -jar /app.jar"   16 minutes ago   Up 3 seconds   0.0.0.0:8888->8080/tcp, :::8888->8080/tcp   myJavaContainerone
+
+
+5.Stop the previously running docker container and remove
+sh 'docker ps -f name=myJavaContainerone -q | xargs --no-run-if-empty docker container stop'
+sh 'docker container ls -a -fname=myJavaContainerone -q  | xargs -r docker container rm'
+6.Start the Docker Container
+ sh 'docker container run --name=myJavaContainerone  -p 8888:8080 -d srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER'
+ 
+ -p --- port forwading 
+ 8888 --- forward port 
+ 8080 --- actual port which we have in server.properties 
+ -d --- detatch running in background 
+ --name=myJavaContainerone (container name )
+ srinadhdocker/springboot-maven-course-micro-svc (image name)
