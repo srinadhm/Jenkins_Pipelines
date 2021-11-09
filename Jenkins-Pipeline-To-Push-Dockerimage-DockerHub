@@ -1,0 +1,46 @@
+pipeline{
+    agent any
+    tools{
+        maven 'maven-3.8.3'
+        gradle 'gradle-6.9'
+    }
+    stages{
+        stage('check out '){
+            steps{
+                git branch: 'master' , url:  'https://github.com/cloudtechmasters/springboot-maven-course-micro-svc.git'
+            }
+        }
+        stage('build the code'){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        stage('build the docker image'){
+            steps{
+                sh 'docker image build -t srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER .'
+            }
+        }
+        stage('Login to docker hub and push the image'){
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'DockerHub_Credentials', passwordVariable: 'password', usernameVariable: 'username')]) {
+            // some block
+           sh  'docker login -u ${username} -p ${password}'
+            }
+            sh 'docker image push srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER'
+            }
+        }
+        stage('Stop the previously running docker container and remove '){
+            steps{
+            sh 'docker ps -f name=myJavaContainerone -q | xargs --no-run-if-empty docker container stop'
+            sh 'docker container ls -a -fname=myJavaContainerone -q  | xargs -r docker container rm'
+        }
+        }
+        stage('Run Docker Container'){
+            steps{
+                sh 'docker container run --name=myJavaContainerone  -p 8888:8080 -d srinadhdocker/springboot-maven-course-micro-svc:$BUILD_NUMBER'
+            }
+            
+        }
+        
+    }
+}
