@@ -17,3 +17,5 @@ image
 Step4: To remove container
 Click on Build by providing action as "Remove" and image tag
 
+
+
